@@ -232,6 +232,9 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
     bucket = getS3Bucket();
     if (s3obj == null) {     // If the selected object is null, getName() will cause exception. 
       if (bucket != null) {  // Therefore, take care of the delete bucket case, first.
+        for ( S3Object object : fileSystem.getS3Service().listObjects(bucket) ) {
+          fileSystem.getS3Service().deleteObject(bucket,  object.getKey() );
+        }
         fileSystem.getS3Service().deleteBucket(bucket);
       }  
       return;
