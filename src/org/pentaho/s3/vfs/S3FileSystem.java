@@ -45,7 +45,7 @@ public class S3FileSystem extends AbstractFileSystem implements FileSystem {
   }
 
   public S3Service getS3Service() {
-    if (service == null || service.getAWSCredentials() == null || service.getAWSCredentials().getAccessKey() == null) {
+    if (service == null || service.getProviderCredentials() == null || service.getProviderCredentials().getAccessKey() == null) {
 
       UserAuthenticator userAuthenticator = DefaultFileSystemConfigBuilder.getInstance().getUserAuthenticator(getFileSystemOptions());
 

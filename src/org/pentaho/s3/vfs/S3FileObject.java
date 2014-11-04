@@ -38,6 +38,7 @@ import org.apache.commons.vfs.provider.AbstractFileObject;
 import org.jets3t.service.S3Service;
 import org.jets3t.service.model.S3Bucket;
 import org.jets3t.service.model.S3Object;
+import org.jets3t.service.model.StorageObject;
 
 public class S3FileObject extends AbstractFileObject implements FileObject {
 
@@ -70,6 +71,26 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
       bucket = fileSystem.getS3Service().getBucket(bucketName);
     }
     return bucket;
+  }
+
+  protected StorageObject getS3ObjectMetadata() throws Exception {
+    try {
+      if ( getName().getPath().indexOf( "/", 1 ) == -1 ) {
+        return null;
+      }
+      String name = getName().getPath().substring( getName().getPath().indexOf( "/", 1 ) + 1 );
+
+      if (!name.equals("")) {
+        try {
+          return fileSystem.getS3Service().getObjectDetails( getS3BucketName(), name );
+        } catch (Exception e) {
+          return null;
+        }
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return null;
   }
 
   protected S3Object getS3Object(boolean deleteIfAlreadyExists) throws Exception {
@@ -110,7 +131,7 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
 
 
   protected long doGetContentSize() throws Exception {
-    return getS3Object(false).getContentLength();
+    return getS3ObjectMetadata().getContentLength();
   }
 
   protected OutputStream doGetOutputStream(final boolean append) throws Exception {
@@ -151,7 +172,6 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
 
   public void close() throws FileSystemException {
     try {
-      getS3Object(false).closeDataInputStream();
       super.close();
     } catch (Exception e) {
     }
@@ -228,7 +248,7 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
   }
 
   public void doDelete() throws Exception {
-    S3Object s3obj = getS3Object(false);
+    StorageObject s3obj = getS3ObjectMetadata();
     bucket = getS3Bucket();
     if (s3obj == null) {     // If the selected object is null, getName() will cause exception. 
       if (bucket != null) {  // Therefore, take care of the delete bucket case, first.
@@ -262,7 +282,7 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
     if (getType().equals(FileType.FOLDER)) {
       throw new FileSystemException("vfs.provider/rename-not-supported.error");
     }
-    S3Object s3Object = getS3Object(false);
+    StorageObject s3Object = getS3ObjectMetadata();
     s3Object.setKey(newfile.getName().getBaseName());
     fileSystem.getS3Service().renameObject(getS3BucketName(), getName().getBaseName(), s3Object);
   }
@@ -271,7 +291,7 @@ public class S3FileObject extends AbstractFileObject implements FileObject {
     if (getType() == FileType.FOLDER) {
       return -1;
     }
-    return getS3Object(false).getLastModifiedDate().getTime();
+    return getS3ObjectMetadata().getLastModifiedDate().getTime();
   }
 
   protected void doSetLastModifiedTime(long modtime) throws Exception {
